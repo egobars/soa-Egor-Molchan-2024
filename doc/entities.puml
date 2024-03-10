@@ -2,35 +2,35 @@
 entity "Пользователи" as Users {
   id [PK]
   --
-  имя
+  name
   email
-  пароль
+  password
 }
 
 entity "Посты" as Posts {
   id [PK]
   --
-  автор_id [FK]
-  заголовок
-  содержание
-  дата_создания
+  author_id [FK]
+  title
+  text
+  creation_date
 }
 
 entity "Комментарии" as Comments {
   id [PK]
   --
-  автор_id [FK]
-  пост_id [FK]
-  текст
-  дата_создания
+  author_id [FK]
+  post_id [FK]
+  text
+  creation_date
 }
 
 entity "Статистика" as Stats {
   id [PK]
   --
-  пост_id [FK]
-  количество_лайков
-  количество_просмотров
+  post_id [FK]
+  likes
+  views
 }
 
 Posts -> Users : Автор
