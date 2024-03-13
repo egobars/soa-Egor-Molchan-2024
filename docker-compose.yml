@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  main_service:
+    container_name: snet-main-service
+    build:
+      context: ./main_service
+      dockerfile: ./Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - snet-network
+    volumes:
+      - .:/src
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    container_name: snet-db
+    image: "postgres:15.2"
+    env_file:
+      - ./.env
+    restart: always
+    ports:
+      - "5432:5432"
+    networks:
+      - snet-network
+    volumes:
+      - /tmp/postgresql:/var/lib/postgresql
+      - /tmp/postgresql/data:/var/lib/postgresql/data
+
+networks:
+  snet-network:
+    name: "snet-network"
