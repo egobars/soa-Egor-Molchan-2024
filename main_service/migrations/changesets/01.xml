@@ -1,0 +1,49 @@
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+        http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+    
+    
+    <changeSet author="e.molchan" id="create-users-table">
+        <createTable tableName="users" remarks="list of users">
+            <column autoIncrement="true" name="id" type="INTEGER" remarks="primary key">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="user_pkey"/>
+            </column>
+
+            <column name="login" type="VARCHAR" remarks="login">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="password" type="VARCHAR" remarks="password hash">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="name" type="VARCHAR" remarks="name">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="surname" type="VARCHAR" remarks="surname">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="phone" type="VARCHAR" remarks="phone number">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="email" type="VARCHAR" remarks="email">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="birthdate" type="TIMESTAMP" remarks="birthdate">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    
+</databaseChangeLog>
