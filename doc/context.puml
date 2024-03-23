@@ -3,14 +3,10 @@
 
 title Контекст
 
-Person(registered_user, "Зарегистрированный пользователь")
-Person(not_registered_user, "Незарегистрированный пользователь")
+Person(user, "Пользователь")
 
-System(self_wall, "Своя стена")
-System(other_wall, "Стены других пользователей")
+System(net, "Социальная сеть")
 
-Rel(registered_user, self_wall, "Добавляет свои посты")
-Rel(registered_user, other_wall, "Просматривает посты, добавляет комментарии")
-Rel(not_registered_user, other_wall, "Просматривает посты")
+Rel(user, net, "Просматривает и добавляет посты/комментарии")
 
 @enduml
