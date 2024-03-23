@@ -1,0 +1,31 @@
+@startuml containers
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons/python.puml
+!include https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons/postgresql.puml
+!include <cloudinsight/kafka.puml>
+
+title Архитектура социальной сети
+
+Person(user, "Пользователь")
+Container(frontend, "Фронтенд", "", "Фронтенд, с которым взаимодействует пользователь")
+Container(main_service, "Главный сервис", "Python", "Отвечает за клиентское API и регистрацию/авторизацию пользователей", "python")
+Container(users_bd, "Users", "Postgres", "Хранит пользователей", "postgresql")
+Container(stat_service, "Сервис статистики", "Python", "Подсчитывает лайки и просмотры", "python")
+Container(stats_bd, "Stats", "ClickHouse", "Хранит статистику")
+Container(post_service, "Сервис постов и комментариев", "Python", "Отвечает за создание/обработку постов и комментариев", "python")
+Container(posts_bd, "Posts", "Postgres", "Хранит посты", "postgresql")
+Container(comments_bd, "Comments", "Postgres", "Хранит комментарии", "postgresql")
+Container(messages_broker, "", "Kafka", "Брокер сообщений", "kafka")
+
+Rel(user, frontend, "")
+Rel(frontend, main_service, "публичное API", "REST")
+Rel(main_service, users_bd, "регистрация/авторизация")
+Rel(main_service, stat_service, "Составление статистики", "gRPC")
+Rel(main_service, post_service, "Создание/просмотр постов", "gRPC")
+Rel(frontend, messages_broker, "События просмотров и лайков")
+Rel(messages_broker, stat_service, "Составление статистики")
+Rel(stat_service, stats_bd, "Хранение статистики")
+Rel(post_service, posts_bd, "Хранение постов")
+Rel(post_service, comments_bd, "Хранение комментариев")
+
+@enduml

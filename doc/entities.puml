@@ -1,0 +1,40 @@
+@startuml entities
+entity "Пользователи" as Users {
+  id [PK]
+  --
+  name
+  email
+  password
+}
+
+entity "Посты" as Posts {
+  id [PK]
+  --
+  author_id [FK]
+  title
+  text
+  creation_date
+}
+
+entity "Комментарии" as Comments {
+  id [PK]
+  --
+  author_id [FK]
+  post_id [FK]
+  text
+  creation_date
+}
+
+entity "Статистика" as Stats {
+  id [PK]
+  --
+  post_id [FK]
+  likes
+  views
+}
+
+Posts -> Users : Автор
+Comments --> Posts : Пост
+Comments --> Users: Автор
+Stats -> Posts : Пост
+@enduml

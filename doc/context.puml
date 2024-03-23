@@ -1,0 +1,12 @@
+@startuml context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Контекст
+
+Person(user, "Пользователь")
+
+System(net, "Социальная сеть")
+
+Rel(user, net, "Просматривает и добавляет посты/комментарии")
+
+@enduml
