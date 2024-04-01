@@ -6,10 +6,6 @@
 
 ```docker-compose up --build```
 
-Затем надо провести liquibase-миграцию. На данный момент делается отдельной командой, я не успел разобраться как провести это внутри Докера:
-
-```docker run --rm --network="snet-network" -v "$(pwd)/main_service/migrations":/snet liquibase/liquibase:4.19.0 --defaultsFile=/snet/dev.properties update```
-
 Сервис запускается по адресу ```localhost:8000```.
 
 ## Спецификация
