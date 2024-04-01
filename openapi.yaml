@@ -1,0 +1,216 @@
+---
+openapi: 3.0.2
+info:
+  title: FastAPI
+  version: 0.1.0
+paths:
+  "/register":
+    post:
+      summary: Register
+      operationId: register_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/AuthSchema"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/login":
+    post:
+      summary: Login
+      operationId: login_login_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              "$ref": "#/components/schemas/Body_login_login_post"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/users":
+    get:
+      summary: List Users
+      operationId: list_users_users_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response List Users Users Get
+                type: array
+                items:
+                  "$ref": "#/components/schemas/UserSchema"
+  "/user/update":
+    post:
+      summary: Update User
+      operationId: update_user_user_update_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/UserCanBeChangedSchema"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
+components:
+  schemas:
+    AuthSchema:
+      title: AuthSchema
+      required:
+      - login
+      - password
+      type: object
+      properties:
+        login:
+          title: Login
+          type: string
+        password:
+          title: Password
+          type: string
+    Body_login_login_post:
+      title: Body_login_login_post
+      required:
+      - username
+      - password
+      type: object
+      properties:
+        grant_type:
+          title: Grant Type
+          pattern: password
+          type: string
+        username:
+          title: Username
+          type: string
+        password:
+          title: Password
+          type: string
+        scope:
+          title: Scope
+          type: string
+          default: ''
+        client_id:
+          title: Client Id
+          type: string
+        client_secret:
+          title: Client Secret
+          type: string
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            "$ref": "#/components/schemas/ValidationError"
+    UserCanBeChangedSchema:
+      title: UserCanBeChangedSchema
+      type: object
+      properties:
+        name:
+          title: Name
+          type: string
+        surname:
+          title: Surname
+          type: string
+        phone:
+          title: Phone
+          type: string
+        email:
+          title: Email
+          type: string
+        birthdate:
+          title: Birthdate
+          type: string
+          format: date-time
+    UserSchema:
+      title: UserSchema
+      required:
+      - login
+      - password
+      type: object
+      properties:
+        login:
+          title: Login
+          type: string
+        password:
+          title: Password
+          type: string
+        name:
+          title: Name
+          type: string
+        surname:
+          title: Surname
+          type: string
+        phone:
+          title: Phone
+          type: string
+        email:
+          title: Email
+          type: string
+        birthdate:
+          title: Birthdate
+          type: string
+          format: date-time
+    ValidationError:
+      title: ValidationError
+      required:
+      - loc
+      - msg
+      - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: login
