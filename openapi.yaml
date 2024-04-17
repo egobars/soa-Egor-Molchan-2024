@@ -86,6 +86,133 @@ paths:
                 "$ref": "#/components/schemas/HTTPValidationError"
       security:
       - OAuth2PasswordBearer: []
+  "/post":
+    post:
+      summary: Create Post
+      operationId: create_post_post_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/PostWithoutAuthor"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Post"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
+  "/post/update":
+    post:
+      summary: Create Post
+      operationId: create_post_post_update_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/UpdatePost"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Post"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
+  "/post/{post_id}":
+    get:
+      summary: Get Post
+      operationId: get_post_post__post_id__get
+      parameters:
+      - required: true
+        schema:
+          title: Post Id
+          type: string
+        name: post_id
+        in: path
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
+    delete:
+      summary: Delete Post
+      operationId: delete_post_post__post_id__delete
+      parameters:
+      - required: true
+        schema:
+          title: Post Id
+          type: string
+        name: post_id
+        in: path
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
+  "/posts":
+    get:
+      summary: Get Post
+      operationId: get_post_posts_get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Cursor"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Get Post Posts Get
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Post"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
 components:
   schemas:
     AuthSchema:
@@ -128,6 +255,19 @@ components:
         client_secret:
           title: Client Secret
           type: string
+    Cursor:
+      title: Cursor
+      required:
+      - cursor_start
+      - cursor_end
+      type: object
+      properties:
+        cursor_start:
+          title: Cursor Start
+          type: integer
+        cursor_end:
+          title: Cursor End
+          type: integer
     HTTPValidationError:
       title: HTTPValidationError
       type: object
@@ -137,6 +277,61 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/ValidationError"
+    Post:
+      title: Post
+      required:
+      - title
+      - text
+      - id
+      - author
+      - creationDate
+      type: object
+      properties:
+        title:
+          title: Title
+          type: string
+        text:
+          title: Text
+          type: string
+        id:
+          title: Id
+          type: integer
+        author:
+          title: Author
+          type: string
+        creationDate:
+          title: Creationdate
+          type: integer
+    PostWithoutAuthor:
+      title: PostWithoutAuthor
+      required:
+      - title
+      - text
+      type: object
+      properties:
+        title:
+          title: Title
+          type: string
+        text:
+          title: Text
+          type: string
+    UpdatePost:
+      title: UpdatePost
+      required:
+      - title
+      - text
+      - post_id
+      type: object
+      properties:
+        title:
+          title: Title
+          type: string
+        text:
+          title: Text
+          type: string
+        post_id:
+          title: Post Id
+          type: integer
     UserCanBeChangedSchema:
       title: UserCanBeChangedSchema
       type: object

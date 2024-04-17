@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+
+service PostService {
+    rpc CreatePost (PostInfoRequest) returns (PostInfoOrErrorReply) {}
+
+    rpc UpdatePost (UpdatePostInfoRequest) returns (PostInfoOrErrorReply) {}
+
+    rpc DeletePost (SpecificPostRequest) returns (OkOrErrorReply) {}
+
+    rpc GetPost (SpecificPostRequest) returns (PostInfoOrErrorReply) {}
+
+    rpc GetAllPosts (PostsRequest) returns (PostsOrErrorReply) {}
+}
+
+message PostInfoRequest {
+    string user = 1;
+    string title = 2;
+    string text = 3;
+}
+
+message UpdatePostInfoRequest {
+    int32 postId = 1;
+    string user = 2;
+    string title = 3;
+    string text = 4;
+}
+
+message SpecificPostRequest {
+    int32 postId = 1;
+    string user = 2;
+}
+
+message PostsRequest {
+    string user = 1;
+    int32 cursorStart = 2;
+    int32 cursorEnd = 3;
+}
+
+message PostInfo {
+    int32 id = 1;
+    string author = 2;
+    string title = 3;
+    string text = 4;
+    int32 creationDate = 5;
+}
+
+message PostInfoOrErrorReply {
+    bool isOk = 1;
+    optional PostInfo postInfo = 2;
+    optional int32 errorCode = 3;
+    optional string errorText = 4;
+}
+
+message OkOrErrorReply {
+    bool isOk = 1;
+    optional int32 errorCode = 2;
+    optional string errorText = 3;
+}
+
+message PostsOrErrorReply {
+    bool isOk = 1;
+    repeated PostInfo posts = 2;
+    optional int32 errorCode = 3;
+    optional string errorText = 4;
+}
