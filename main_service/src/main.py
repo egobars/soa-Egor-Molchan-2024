@@ -1,11 +1,11 @@
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-import datetime, uvicorn, jwt
+import datetime, uvicorn, jwt, grpc, google.protobuf.json_format
 from fastapi import FastAPI, Depends, HTTPException, Response
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 from db import SessionLocal
-import models, schemas
+import models, schemas, posts_service_pb2, posts_service_pb2_grpc
 
 SECRET_KEY = "some_secret_key"
 ALGORITHM = "HS256"
@@ -21,6 +21,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_stub():
+    channel = grpc.insecure_channel('posts_service:50051')
+    stub = posts_service_pb2_grpc.PostServiceStub(channel)
+    return stub
 
 def create_jwt_token(data: dict):
     expiration = datetime.utcnow() + EXPIRATION_TIME
@@ -86,6 +91,75 @@ async def update_user(user: schemas.UserCanBeChangedSchema, current_user: models
     query.update(user.dict(), synchronize_session=False)
     db.commit()
     return Response(status_code=200)
+
+@server.post('/post', response_model=schemas.Post)
+async def create_post(post: schemas.PostWithoutAuthor, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+    request = posts_service_pb2.PostInfoRequest(
+        user=current_user.login,
+        title=post.title,
+        text=post.text
+    )
+    response = stub.CreatePost(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    return response['postInfo']
+
+@server.post('/post/update', response_model=schemas.Post)
+async def create_post(post: schemas.UpdatePost, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+    request = posts_service_pb2.UpdatePostInfoRequest(
+        postId=post.post_id,
+        user=current_user.login,
+        title=post.title,
+        text=post.text
+    )
+    response = stub.UpdatePost(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    print(response)
+    if 'isOk' not in response:
+        print(response)
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    return response['postInfo']
+
+@server.delete('/post/{post_id}')
+async def delete_post(post_id: str, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+    request = posts_service_pb2.SpecificPostRequest(
+        postId=int(post_id),
+        user=current_user.login
+    )
+    response = stub.DeletePost(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    return Response(status_code=200)
+
+@server.get('/post/{post_id}')
+async def get_post(post_id: str, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+    request = posts_service_pb2.SpecificPostRequest(
+        postId=int(post_id),
+        user=current_user.login
+    )
+    response = stub.GetPost(request)
+    print(response)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    return response['postInfo']
+
+@server.get('/posts', response_model=list[schemas.Post])
+async def get_post(cursor: schemas.Cursor, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+    request = posts_service_pb2.PostsRequest(
+        user=current_user.login,
+        cursorStart=cursor.cursor_start,
+        cursorEnd=cursor.cursor_end
+    )
+    response = stub.GetAllPosts(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    if 'posts' not in response:
+        return []
+    return response['posts']
 
 if __name__ == '__main__':
     uvicorn.run(server, host="0.0.0.0", port=8000)

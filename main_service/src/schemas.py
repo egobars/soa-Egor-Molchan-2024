@@ -21,3 +21,25 @@ class UserSchema(AuthSchema):
 
     class Config:
         orm_mode = True
+
+class PostWithoutAuthor(BaseModel):
+    title: str
+    text: str
+
+class Post(PostWithoutAuthor):
+    id: int
+    author: str
+    creationDate: int
+
+    class Config:
+        orm_mode = True
+
+class UpdatePost(PostWithoutAuthor):
+    post_id: int
+
+    class Config:
+        orm_mode = True
+
+class Cursor(BaseModel):
+    cursor_start: int
+    cursor_end: int

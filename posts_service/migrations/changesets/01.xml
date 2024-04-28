@@ -1,0 +1,42 @@
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+        http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+    
+    
+    <changeSet author="e.molchan" id="create-posts-table">
+        <createTable tableName="posts" remarks="list of posts">
+            <column autoIncrement="true" name="id" type="INTEGER" remarks="primary key">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="posts_pkey"/>
+            </column>
+
+            <column name="users_id" type="INTEGER" remarks="author: foreign key for users database">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="title" type="VARCHAR" remarks="title">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="text" type="VARCHAR" remarks="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="creation_date" type="TIMESTAMP" remarks="creation_date">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+
+     <changeSet author="e.molchan" id="create-posts-foreign-keys">
+        <addForeignKeyConstraint baseColumnNames="users_id" baseTableName="posts" constraintName="users_id_fk" referencedColumnNames="id" referencedTableName="users" />
+    </changeSet>
+
+    
+</databaseChangeLog>
