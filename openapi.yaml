@@ -113,8 +113,8 @@ paths:
       - OAuth2PasswordBearer: []
   "/post/update":
     post:
-      summary: Create Post
-      operationId: create_post_post_update_post
+      summary: Update Post
+      operationId: update_post_post_update_post
       requestBody:
         content:
           application/json:
@@ -159,8 +159,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/HTTPValidationError"
-      security:
-      - OAuth2PasswordBearer: []
     delete:
       summary: Delete Post
       operationId: delete_post_post__post_id__delete
@@ -187,8 +185,8 @@ paths:
       - OAuth2PasswordBearer: []
   "/posts":
     get:
-      summary: Get Post
-      operationId: get_post_posts_get
+      summary: Get All Posts
+      operationId: get_all_posts_posts_get
       requestBody:
         content:
           application/json:
@@ -201,7 +199,7 @@ paths:
           content:
             application/json:
               schema:
-                title: Response Get Post Posts Get
+                title: Response Get All Posts Posts Get
                 type: array
                 items:
                   "$ref": "#/components/schemas/Post"
@@ -211,8 +209,54 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/HTTPValidationError"
+  "/like":
+    get:
+      summary: Like
+      operationId: like_like_get
+      parameters:
+      - required: true
+        schema:
+          title: Post
+          type: integer
+        name: post
+        in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
       security:
       - OAuth2PasswordBearer: []
+  "/view":
+    get:
+      summary: View
+      operationId: view_view_get
+      parameters:
+      - required: true
+        schema:
+          title: Post
+          type: integer
+        name: post
+        in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
 components:
   schemas:
     AuthSchema:
@@ -258,10 +302,14 @@ components:
     Cursor:
       title: Cursor
       required:
+      - login
       - cursor_start
       - cursor_end
       type: object
       properties:
+        login:
+          title: Login
+          type: string
         cursor_start:
           title: Cursor Start
           type: integer
