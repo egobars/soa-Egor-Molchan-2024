@@ -41,5 +41,6 @@ class UpdatePost(PostWithoutAuthor):
         orm_mode = True
 
 class Cursor(BaseModel):
+    login: str
     cursor_start: int
     cursor_end: int

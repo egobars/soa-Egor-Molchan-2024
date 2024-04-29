@@ -19,6 +19,10 @@
                 <constraints nullable="false"/>
             </column>
 
+            <column name="author" type="VARCHAR" remarks="author">
+                <constraints nullable="false"/>
+            </column>
+
             <column name="title" type="VARCHAR" remarks="title">
                 <constraints nullable="false"/>
             </column>
@@ -34,9 +38,4 @@
     </changeSet>
 
 
-     <changeSet author="e.molchan" id="create-posts-foreign-keys">
-        <addForeignKeyConstraint baseColumnNames="users_id" baseTableName="posts" constraintName="users_id_fk" referencedColumnNames="id" referencedTableName="users" />
-    </changeSet>
-
-    
 </databaseChangeLog>
