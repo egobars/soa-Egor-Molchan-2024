@@ -31,16 +31,31 @@ services:
       - migrations_posts_service
     restart: always
   
+  statistics_service:
+    container_name: snet-statistics-service
+    build:
+      context: ./statistics_service
+      dockerfile: ./Dockerfile
+    ports:
+      - "8002:8002"
+    networks:
+      - snet-network
+    volumes:
+      - .:/src
+    depends_on:
+      - clickhouse
+    restart: always
+  
   migrations_main_service:
     container_name: snet-migrations-main-service
     image: liquibase/liquibase:4.19.0
     networks:
       - snet-network
     volumes:
-      - ./main_service/migrations:/snet
-    command: --defaultsFile=/snet/dev.properties update
+      - ./main_service/migrations:/snet-main-service
+    command: --defaultsFile=/snet-main-service/dev.properties update
     depends_on:
-      - db
+      - db_main_service
   
   migrations_posts_service:
     container_name: snet-migrations-posts-service
@@ -48,24 +63,130 @@ services:
     networks:
       - snet-network
     volumes:
-      - ./posts_service/migrations:/snet
-    command: --defaultsFile=/snet/dev.properties update
+      - ./posts_service/migrations:/snet-posts-service
+    command: --defaultsFile=/snet-posts-service/dev.properties update
     depends_on:
-      - db
+      - db_posts_service
 
-  db:
-    container_name: snet-db
+  db_main_service:
+    container_name: snet-db-main-service
     image: "postgres:15.2"
-    env_file:
-      - ./.env
+    environment:
+      - POSTGRES_DB=snet-main-service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     restart: always
     ports:
       - "5432:5432"
     networks:
       - snet-network
     volumes:
-      - /tmp/postgresql:/var/lib/postgresql
-      - /tmp/postgresql/data:/var/lib/postgresql/data
+      - /tmp/postgresql_main:/var/lib/postgresql
+      - /tmp/postgresql_main/data:/var/lib/postgresql/data
+  
+  db_posts_service:
+    container_name: snet-db-posts-service
+    image: "postgres:15.2"
+    environment:
+      - POSTGRES_DB=snet-posts-service
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    restart: always
+    expose:
+      - "5433"
+    ports:
+      - "5433:5433"
+    networks:
+      - snet-network
+    volumes:
+      - /tmp/postgresql_posts:/var/lib/postgresql
+      - /tmp/postgresql_posts/data:/var/lib/postgresql/data
+    command: -p 5433
+  
+  clickhouse:
+    container_name: snet-clickhouse
+    image: yandex/clickhouse-server
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./clickhouse:/var/lib/clickhouse
+    networks:
+      - snet-network
+  
+  clickhouse-init:
+    container_name: snet-clickhouse-init
+    image: clickhouse/clickhouse-server:23.5
+    volumes:
+      - ./clickhouse:/var/clickhouse
+    depends_on:
+      - clickhouse
+    networks:
+      - snet-network
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      sleep 1
+      while ! clickhouse-client --host clickhouse -q \"SHOW databases;\"; do
+        echo waiting for clickhouse up
+        sleep 1
+      done
+      clickhouse-client --host clickhouse --queries-file /var/clickhouse/init.sql
+      "
+
+  kafka:
+    container_name: "snet-kafka"
+    image: confluentinc/cp-kafka:7.6.0
+    hostname: snet-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://snet-kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@snet-kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://snet-kafka:29092,CONTROLLER://snet-kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_JMX_PORT: 9997
+    ports:
+      - "9092:9092"
+    networks:
+      - snet-network
+
+  kafka-ui:
+    container_name: "snet-kafka-ui"
+    image: provectuslabs/kafka-ui
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: 'local'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'snet-kafka:29092'
+      KAFKA_CLUSTERS_0_METRICS_PORT: 9997
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    ports:
+      - "8081:8080"
+    networks:
+      - snet-network
+
+  init-kafka:
+    container_name: "snet-init-kafka"
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - kafka
+    networks:
+      - snet-network
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      kafka-topics --bootstrap-server snet-kafka:29092 --list
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server snet-kafka:29092 --create --if-not-exists --topic events --replication-factor 1 --partitions 1
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server snet-kafka:29092 --list
+      "
 
 networks:
   snet-network:

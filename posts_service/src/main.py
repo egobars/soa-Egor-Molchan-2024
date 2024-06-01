@@ -9,20 +9,10 @@ import models
 class PostService(posts_service_pb2_grpc.PostService):
     def CreatePost(self, request, context):
         db = SessionLocal()
-        query = db.query(models.User).filter((models.User.login == request.user))
-        if query.first() is None:
-            db.close()
-            return posts_service_pb2.PostInfoOrErrorReply(
-                isOk=False,
-                errorCode=404,
-                errorText='user not found'
-            )
-        
         now = datetime.datetime.now()
-
-        user = query.first()
         entity = models.Post(
-            users_id=user.id,
+            users_id=request.userId,
+            author=request.userLogin,
             title=request.title,
             text=request.text,
             creation_date=now
@@ -34,7 +24,7 @@ class PostService(posts_service_pb2_grpc.PostService):
 
         post_info = posts_service_pb2.PostInfo(
             id=entity.id,
-            author=user.login,
+            author=request.userLogin,
             title=entity.title,
             text=entity.text,
             creationDate=int(now.strftime('%s'))
@@ -48,16 +38,6 @@ class PostService(posts_service_pb2_grpc.PostService):
 
     def UpdatePost(self, request, context):
         db = SessionLocal()
-        query = db.query(models.User).filter((models.User.login == request.user))
-        if query.first() is None:
-            db.close()
-            return posts_service_pb2.PostInfoOrErrorReply(
-                isOk=False,
-                errorCode=404,
-                errorText='user not found'
-            )
-
-        user = query.first()
         query = db.query(models.Post).filter((models.Post.id == request.postId))
         if query.first() is None:
             db.close()
@@ -68,7 +48,7 @@ class PostService(posts_service_pb2_grpc.PostService):
             )
 
         post = query.first()
-        if post.users_id != user.id:
+        if post.users_id != request.userId:
             db.close()
             return posts_service_pb2.PostInfoOrErrorReply(
                 isOk=False,
@@ -84,7 +64,7 @@ class PostService(posts_service_pb2_grpc.PostService):
 
         post_info = posts_service_pb2.PostInfo(
             id=post.id,
-            author=user.login,
+            author=request.userLogin,
             title=request.title,
             text=request.text,
             creationDate=int(post.creation_date.strftime('%s'))
@@ -98,16 +78,6 @@ class PostService(posts_service_pb2_grpc.PostService):
 
     def DeletePost(self, request, context):
         db = SessionLocal()
-        query = db.query(models.User).filter((models.User.login == request.user))
-        if query.first() is None:
-            db.close()
-            return posts_service_pb2.OkOrErrorReply(
-                isOk=False,
-                errorCode=404,
-                errorText='user not found'
-            )
-
-        user = query.first()
         query = db.query(models.Post).filter((models.Post.id == request.postId))
         if query.first() is None:
             db.close()
@@ -118,7 +88,7 @@ class PostService(posts_service_pb2_grpc.PostService):
             )
 
         post = query.first()
-        if post.users_id != user.id:
+        if post.users_id != request.userId:
             db.close()
             return posts_service_pb2.OkOrErrorReply(
                 isOk=False,
@@ -135,16 +105,6 @@ class PostService(posts_service_pb2_grpc.PostService):
 
     def GetPost(self, request, context):
         db = SessionLocal()
-        query = db.query(models.User).filter((models.User.login == request.user))
-        if query.first() is None:
-            db.close()
-            return posts_service_pb2.PostInfoOrErrorReply(
-                isOk=False,
-                errorCode=404,
-                errorText='user not found'
-            )
-
-        user = query.first()
         query = db.query(models.Post).filter((models.Post.id == request.postId))
         if query.first() is None:
             db.close()
@@ -155,17 +115,10 @@ class PostService(posts_service_pb2_grpc.PostService):
             )
 
         post = query.first()
-        if post.users_id != user.id:
-            db.close()
-            return posts_service_pb2.PostInfoOrErrorReply(
-                isOk=False,
-                errorCode=403,
-                errorText='permission denied'
-            )
 
         post_info = posts_service_pb2.PostInfo(
             id=post.id,
-            author=user.login,
+            author=post.author,
             title=post.title,
             text=post.text,
             creationDate=int(post.creation_date.strftime('%s'))
@@ -179,17 +132,7 @@ class PostService(posts_service_pb2_grpc.PostService):
 
     def GetAllPosts(self, request, context):
         db = SessionLocal()
-        query = db.query(models.User).filter((models.User.login == request.user))
-        if query.first() is None:
-            db.close()
-            return posts_service_pb2.PostsOrErrorReply(
-                isOk=False,
-                errorCode=404,
-                errorText='user not found'
-            )
-
-        user = query.first()
-        query = db.query(models.Post).filter((models.Post.users_id == user.id))
+        query = db.query(models.Post).filter((models.Post.author == request.userLogin))
         if query is None:
             db.close()
             return posts_service_pb2.PostsOrErrorReply(
@@ -203,14 +146,15 @@ class PostService(posts_service_pb2_grpc.PostService):
 
         result = posts_service_pb2.PostsOrErrorReply()
         result.isOk = True
-        for post in posts[start:end]:
-            result.posts.add(
-                id=post.id,
-                author=user.login,
-                title=post.title,
-                text=post.text,
-                creationDate=int(post.creation_date.strftime('%s'))
-            )
+        for post in posts:
+            if post.id >= start and post.id < end:
+                result.posts.add(
+                    id=post.id,
+                    author=post.author,
+                    title=post.title,
+                    text=post.text,
+                    creationDate=int(post.creation_date.strftime('%s'))
+                )
         db.close()
 
         return result
