@@ -1,10 +1,20 @@
-CREATE DATABASE IF NOT EXISTS snet_statistics;
-CREATE TABLE IF NOT EXISTS snet_statistics.stats
+CREATE DATABASE IF NOT EXISTS snet;
+CREATE TABLE IF NOT EXISTS snet.posts_stats
 (
-    `id` Int32,
     `post_id` Int32,
-    `user_id` Int32 NULL,
+    `user_id` Int32,
     `type` String
 )
 ENGINE = MergeTree
-PRIMARY KEY (id);
+ORDER BY (post_id)
+PARTITION BY (post_id);
+
+CREATE TABLE IF NOT EXISTS snet.authors_stats
+(
+    `author` String,
+    `user_id` Int32,
+    `post_id` Int32
+)
+ENGINE = MergeTree
+ORDER BY (author)
+PARTITION BY (author);
