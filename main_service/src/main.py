@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 from db import SessionLocal
-import models, schemas, posts_service_pb2, posts_service_pb2_grpc
+import models, schemas, posts_service_pb2, posts_service_pb2_grpc, statistics_service_pb2, statistics_service_pb2_grpc
 
 SECRET_KEY = "some_secret_key"
 ALGORITHM = "HS256"
@@ -41,9 +41,14 @@ def get_db():
     finally:
         db.close()
 
-def get_stub():
+def get_stub_posts():
     channel = grpc.insecure_channel('posts_service:50051')
     stub = posts_service_pb2_grpc.PostServiceStub(channel)
+    return stub
+
+def get_stub_stats():
+    channel = grpc.insecure_channel('statistics_service:50051')
+    stub = statistics_service_pb2_grpc.StatsServiceStub(channel)
     return stub
 
 def create_jwt_token(data: dict):
@@ -112,7 +117,7 @@ async def update_user(user: schemas.UserCanBeChangedSchema, current_user: models
     return Response(status_code=200)
 
 @server.post('/post', response_model=schemas.Post)
-async def create_post(post: schemas.PostWithoutAuthor, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+async def create_post(post: schemas.PostWithoutAuthor, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub_posts)):
     request = posts_service_pb2.PostInfoRequest(
         userId=current_user.id,
         userLogin=current_user.login,
@@ -126,7 +131,7 @@ async def create_post(post: schemas.PostWithoutAuthor, current_user: models.User
     return response['postInfo']
 
 @server.post('/post/update', response_model=schemas.Post)
-async def update_post(post: schemas.UpdatePost, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+async def update_post(post: schemas.UpdatePost, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub_posts)):
     request = posts_service_pb2.UpdatePostInfoRequest(
         postId=post.post_id,
         userId=current_user.id,
@@ -143,7 +148,7 @@ async def update_post(post: schemas.UpdatePost, current_user: models.User = Depe
     return response['postInfo']
 
 @server.delete('/post/{post_id}')
-async def delete_post(post_id: str, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub)):
+async def delete_post(post_id: str, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub_posts)):
     request = posts_service_pb2.SpecificPostRequest(
         userId=current_user.id,
         postId=int(post_id)
@@ -155,7 +160,7 @@ async def delete_post(post_id: str, current_user: models.User = Depends(get_curr
     return Response(status_code=200)
 
 @server.get('/post/{post_id}')
-async def get_post(post_id: str, stub=Depends(get_stub)):
+async def get_post(post_id: str, stub=Depends(get_stub_posts)):
     request = posts_service_pb2.SpecificPostRequest(
         postId=int(post_id),
     )
@@ -166,7 +171,7 @@ async def get_post(post_id: str, stub=Depends(get_stub)):
     return response['postInfo']
 
 @server.get('/posts', response_model=list[schemas.Post])
-async def get_all_posts(cursor: schemas.Cursor, stub=Depends(get_stub), db=Depends(get_db)):
+async def get_all_posts(cursor: schemas.Cursor, stub=Depends(get_stub_posts), db=Depends(get_db)):
     query = db.query(models.User).filter((models.User.login == cursor.login))
     if query.first() is None:
         raise HTTPException(status_code=404, detail="User doesn't exist")
@@ -185,9 +190,17 @@ async def get_all_posts(cursor: schemas.Cursor, stub=Depends(get_stub), db=Depen
     return response['posts']
 
 @server.get('/like')
-async def like(post: int, current_user: models.User = Depends(get_current_user)):
+async def like(post: int, current_user: models.User = Depends(get_current_user), stub=Depends(get_stub_posts)):
+    request = posts_service_pb2.SpecificPostRequest(
+        postId=post,
+    )
+    response = stub.GetPost(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
     value = {
         'post_id': post,
+        'author': response['postInfo']['author'],
         'user_id': current_user.id,
         'type': 'LIKE'
     }
@@ -195,13 +208,81 @@ async def like(post: int, current_user: models.User = Depends(get_current_user))
     return Response(status_code=200)
 
 @server.get('/view')
-async def view(post: int):
+async def view(post: int, current_user: models.User = Depends(get_current_user)):
     value = {
         'post_id': post,
+        'user_id': current_user.id,
         'type': 'VIEW'
     }
     await aioproducer.send('events', json.dumps(value).encode("ascii")) 
     return Response(status_code=200)
+
+@server.get('/post-stats', response_model=schemas.PostStats)
+async def get_posts_stats(post_id: int, stub=Depends(get_stub_stats), stub_posts=Depends(get_stub_posts)):
+    request = posts_service_pb2.SpecificPostRequest(
+        postId=int(post_id),
+    )
+    response = stub_posts.GetPost(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+
+    request = statistics_service_pb2.PostStatsRequest(
+        postId=post_id,
+    )
+    response = stub.GetPostStats(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    post_stats = response['postStats']
+    likes = 0
+    views = 0
+    if 'likes' in post_stats:
+        likes = post_stats['likes']
+    if 'views' in post_stats:
+        views = post_stats['views']
+    return { 'post_id': post_stats['id'], 'likes': likes, 'views': views }
+
+@server.get('/top-posts', response_model=list[schemas.OnePostStat])
+async def get_top_posts(is_likes: int, stub=Depends(get_stub_stats), stub_posts=Depends(get_stub_posts)):
+    request = statistics_service_pb2.TopPostsRequest(
+        isLikes=is_likes == 1,
+    )
+    response = stub.GetTopPosts(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    result = []
+    if 'posts' in response:
+        for post in response['posts']:
+            request = posts_service_pb2.SpecificPostRequest(
+                postId=post['id'],
+            )
+            resp = stub_posts.GetPost(request)
+            resp = google.protobuf.json_format.MessageToDict(resp)
+
+            result.append({
+                'post_id': post['id'],
+                'author': resp['postInfo']['author'],
+                'stat': post['stat']
+            })
+    return result
+
+@server.get('/top-users', response_model=list[schemas.UserStats])
+async def get_top_posts(stub=Depends(get_stub_stats)):
+    request = statistics_service_pb2.EmptyRequest()
+    response = stub.GetTopUsers(request)
+    response = google.protobuf.json_format.MessageToDict(response)
+    if 'isOk' not in response:
+        raise HTTPException(status_code=response['errorCode'], detail=response['errorText'])
+    result = []
+    if 'users' in response:
+        for user in response['users']:
+            result.append({
+                'login': user['login'],
+                'likes': user['likes']
+            })
+    return result
 
 if __name__ == '__main__':
     uvicorn.run(server, host="0.0.0.0", port=8000)

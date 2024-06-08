@@ -257,6 +257,73 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/HTTPValidationError"
+      security:
+      - OAuth2PasswordBearer: []
+  "/post-stats":
+    get:
+      summary: Get Posts Stats
+      operationId: get_posts_stats_post_stats_get
+      parameters:
+      - required: true
+        schema:
+          title: Post Id
+          type: integer
+        name: post_id
+        in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PostStats"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/top-posts":
+    get:
+      summary: Get Top Posts
+      operationId: get_top_posts_top_posts_get
+      parameters:
+      - required: true
+        schema:
+          title: Is Likes
+          type: integer
+        name: is_likes
+        in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Get Top Posts Top Posts Get
+                type: array
+                items:
+                  "$ref": "#/components/schemas/OnePostStat"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/top-users":
+    get:
+      summary: Get Top Posts
+      operationId: get_top_posts_top_users_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Get Top Posts Top Users Get
+                type: array
+                items:
+                  "$ref": "#/components/schemas/UserStats"
 components:
   schemas:
     AuthSchema:
@@ -325,6 +392,23 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/ValidationError"
+    OnePostStat:
+      title: OnePostStat
+      required:
+      - post_id
+      - author
+      - stat
+      type: object
+      properties:
+        post_id:
+          title: Post Id
+          type: integer
+        author:
+          title: Author
+          type: string
+        stat:
+          title: Stat
+          type: integer
     Post:
       title: Post
       required:
@@ -349,6 +433,23 @@ components:
           type: string
         creationDate:
           title: Creationdate
+          type: integer
+    PostStats:
+      title: PostStats
+      required:
+      - post_id
+      - likes
+      - views
+      type: object
+      properties:
+        post_id:
+          title: Post Id
+          type: integer
+        likes:
+          title: Likes
+          type: integer
+        views:
+          title: Views
           type: integer
     PostWithoutAuthor:
       title: PostWithoutAuthor
@@ -429,6 +530,19 @@ components:
           title: Birthdate
           type: string
           format: date-time
+    UserStats:
+      title: UserStats
+      required:
+      - login
+      - likes
+      type: object
+      properties:
+        login:
+          title: Login
+          type: string
+        likes:
+          title: Likes
+          type: integer
     ValidationError:
       title: ValidationError
       required:

@@ -5,3 +5,6 @@ uvicorn==0.22.0
 clickhouse-connect
 asyncio
 aiokafka
+grpcio
+grpcio-tools
+protobuf

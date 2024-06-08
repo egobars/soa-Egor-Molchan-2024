@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 import json
 from aiokafka import AIOKafkaConsumer
 import uvicorn
-import clickhouse_connect
 from fastapi import FastAPI, Response
+from proto import serve, client
 
 loop = asyncio.get_event_loop()
 consumer = AIOKafkaConsumer("events", bootstrap_servers='kafka:29092', loop=loop)
@@ -21,23 +21,24 @@ async def consume():
         async for msg in consumer:
             value = msg.value.decode('ascii')
             value = json.loads(value)
-            if 'user_id' not in value:
-                value['user_id'] = None 
-            client.insert('snet_statistics.stats', [[value['post_id'], value['user_id'], value['type']]], column_names=['post_id', 'user_id', 'type'])
+            client.insert('snet.posts_stats', [[value['post_id'], value['user_id'], value['type']]], column_names=['post_id', 'user_id', 'type'])
+            if value['type'] == 'LIKE':
+                client.insert('snet.authors_stats', [[value['author'], value['user_id'], value['post_id']]], column_names=['author', 'user_id', 'post_id'])
     finally:
         await consumer.stop()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    loop.create_task(serve())
     loop.create_task(consume())
     yield
     await consumer.stop()
 
 server = FastAPI(lifespan=lifespan)
-client = clickhouse_connect.get_client(host='snet-clickhouse')
 
 @server.get('/stats')
 async def get_stats():
+    print(client.query('SELECT count FROM (SELECT post_id, count() as count FROM (SELECT DISTINCT user_id, post_id FROM snet.posts_stats WHERE type=\'LIKE\') GROUP BY post_id) WHERE post_id=1').result_rows[0][0])
     return Response(status_code=200)
 
 if __name__ == '__main__':

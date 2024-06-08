@@ -44,3 +44,17 @@ class Cursor(BaseModel):
     login: str
     cursor_start: int
     cursor_end: int
+
+class PostStats(BaseModel):
+    post_id: int
+    likes: int
+    views: int
+
+class OnePostStat(BaseModel):
+    post_id: int
+    author: str
+    stat: int
+
+class UserStats(BaseModel):
+    login: str
+    likes: int
